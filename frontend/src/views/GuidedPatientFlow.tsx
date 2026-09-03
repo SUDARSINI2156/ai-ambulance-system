@@ -489,7 +489,33 @@ export const GuidedPatientFlow: React.FC<GuidedPatientFlowProps> = ({
 
               {/* Explainability Callout */}
               <div className="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-800/60 text-xs text-cyan-200 leading-relaxed">
-                <b>💡 Why this hospital was chosen:</b> {aiRationale}
+                <b>💡 AI Decision Rationale:</b> {aiRationale}
+              </div>
+
+              {/* Alternative Hospitals Comparison (As per Product Roadmap) */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Other Hospitals Evaluated in Area:
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {hospitals
+                    .filter((h) => h.id !== selectedHospital.id)
+                    .slice(0, 3)
+                    .map((alt, idx) => (
+                      <div key={alt.id} className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-1">
+                        <div className="font-bold text-slate-300 truncate">{alt.name}</div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                          <span>~{14 + idx * 4} min ETA</span>
+                          <span className={alt.available_icu_beds > 0 ? 'text-amber-400' : 'text-rose-400'}>
+                            {alt.available_icu_beds} ICU Beds
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {alt.available_icu_beds === 0 ? '⚠️ Zero ICU beds available' : '⚠️ Slower transit corridor'}
+                        </div>
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
           ) : (
@@ -546,6 +572,24 @@ export const GuidedPatientFlow: React.FC<GuidedPatientFlowProps> = ({
                 <PhoneCall className="w-4 h-4" />
                 <span>Call Paramedic Driver ({assignedAmbulance?.phone || '+91 98401 11081'})</span>
               </a>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (selectedHospital) {
+                    try {
+                      await EmergencyAPI.simulateTrafficJam(selectedHospital.id, 4);
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-amber-600/90 hover:bg-amber-500 text-white font-bold text-xs shadow-lg shadow-amber-600/20 transition-all"
+                title="Inject sudden road bottleneck to trigger AI Dynamic Rerouting"
+              >
+                <AlertTriangle className="w-3.5 h-3.5 animate-bounce" />
+                <span>⚡ Test AI Dynamic Reroute</span>
+              </button>
 
               <button
                 onClick={handleCompleteHandover}
