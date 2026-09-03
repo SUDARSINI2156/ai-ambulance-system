@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { 
   ShieldAlert, Ambulance as AmbIcon, Building2, 
-  Clock, Navigation, CheckCircle2, AlertTriangle, ArrowUpRight
+  Clock, Navigation, CheckCircle2, AlertTriangle, Search, MapPin
 } from 'lucide-react';
 import { Hospital, Ambulance, Emergency } from '../types';
-import { MapView } from '../components/MapView';
+import { MapView, TAMIL_NADU_DISTRICTS } from '../components/MapView';
 import { SimulationControls } from '../components/SimulationControls';
+import { EmergencyAPI } from '../services/api';
 
 interface AdminCommandCenterProps {
   hospitals: Hospital[];
@@ -25,6 +26,20 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
   onSelectEmergency,
 }) => {
   const [selectedHospitalId, setSelectedHospitalId] = useState<number | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('chennai');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchingOSM, setIsSearchingOSM] = useState(false);
+  const [osmResults, setOsmResults] = useState<any[]>([]);
+
+  // Filter hospitals based on district
+  const filteredHospitals = selectedDistrict === 'all'
+    ? hospitals
+    : hospitals.filter((h) => {
+        const addr = (h.address || '').toLowerCase();
+        const name = (h.name || '').toLowerCase();
+        const dist = selectedDistrict.toLowerCase();
+        return addr.includes(dist) || name.includes(dist);
+      });
 
   // Active emergencies
   const activeEmergencies = emergencies.filter(
@@ -32,7 +47,22 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
   );
   const currentSelectedEmergency = activeEmergencies[0] || null;
 
-  // Calculate totals
+  // Real OpenStreetMap search handler
+  const handleOSMSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setIsSearchingOSM(true);
+    try {
+      const res = await EmergencyAPI.searchOSMHospitals(searchQuery);
+      setOsmResults(res.data.hospitals || []);
+    } catch (err) {
+      console.error('OSM search error:', err);
+    } finally {
+      setIsSearchingOSM(false);
+    }
+  };
+
+  // KPI Calculations
   const totalErBeds = hospitals.reduce((acc, h) => acc + h.total_er_beds, 0);
   const availableErBeds = hospitals.reduce((acc, h) => acc + h.available_er_beds, 0);
   const totalIcuBeds = hospitals.reduce((acc, h) => acc + h.total_icu_beds, 0);
@@ -43,7 +73,7 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
     <div className="space-y-4">
       {/* Top Simulation Toolbar */}
       <SimulationControls
-        hospitals={hospitals}
+        hospitals={filteredHospitals.length > 0 ? filteredHospitals : hospitals}
         ambulances={ambulances}
         onOpenDispatch={onOpenDispatch}
         onRefresh={onRefresh}
@@ -56,7 +86,7 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
             <ShieldAlert className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Active Incidents</div>
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Active Incidents</div>
             <div className="text-xl font-black text-white flex items-center gap-2">
               {activeEmergencies.length}
               {activeEmergencies.length > 0 && (
@@ -73,7 +103,7 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
             <AmbIcon className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Fleet Readiness</div>
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Fleet Readiness</div>
             <div className="text-xl font-black text-white">
               {availableAmbs} <span className="text-xs text-slate-400 font-normal">/ {ambulances.length} Active</span>
             </div>
@@ -85,9 +115,9 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">City ER Beds Free</div>
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">TN ER Beds Free</div>
             <div className="text-xl font-black text-emerald-400">
-              {availableErBeds} <span className="text-xs text-slate-400 font-normal">/ {totalErBeds} Total</span>
+              {availableErBeds} <span className="text-xs text-slate-400 font-normal">/ {totalErBeds}</span>
             </div>
           </div>
         </div>
@@ -97,15 +127,57 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-400 uppercase font-bold tracking-wider">Critical ICU Headroom</div>
+            <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">ICU Headroom</div>
             <div className="text-xl font-black text-indigo-400">
-              {availableIcuBeds} <span className="text-xs text-slate-400 font-normal">/ {totalIcuBeds} ICU</span>
+              {availableIcuBeds} <span className="text-xs text-slate-400 font-normal">/ {totalIcuBeds}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Tactical Map (Left) + Live Operational Lists (Right) */}
+      {/* District Selector & OSM Search Bar */}
+      <div className="glass-panel p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        {/* District Quick Pill Filter */}
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
+          <span className="text-xs text-slate-400 font-bold flex items-center gap-1 shrink-0 mr-1">
+            <MapPin className="w-3.5 h-3.5 text-cyan-400" /> District:
+          </span>
+          {TAMIL_NADU_DISTRICTS.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => setSelectedDistrict(d.id)}
+              className={`px-3 py-1 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                selectedDistrict === d.id
+                  ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30'
+                  : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
+              }`}
+            >
+              {d.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Live OpenStreetMap Query Input */}
+        <form onSubmit={handleOSMSearch} className="flex items-center gap-1.5 text-xs">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search any town or landmark..."
+            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 text-xs focus:outline-none focus:border-cyan-500 w-48 sm:w-60"
+          />
+          <button
+            type="submit"
+            disabled={isSearchingOSM}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold flex items-center gap-1 transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span>{isSearchingOSM ? 'Searching...' : 'OSM Live'}</span>
+          </button>
+        </form>
+      </div>
+
+      {/* Main Grid: Tactical Map (Left) + Operations Feed (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Tactical Map Container */}
         <div className="lg:col-span-2 h-[560px]">
@@ -114,6 +186,8 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
             ambulances={ambulances}
             activeEmergency={currentSelectedEmergency}
             selectedHospitalId={selectedHospitalId}
+            selectedDistrict={selectedDistrict}
+            onDistrictChange={setSelectedDistrict}
             onHospitalClick={(h) => setSelectedHospitalId(h.id)}
           />
         </div>
@@ -138,7 +212,7 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
             <div className="mt-3 space-y-2.5 overflow-y-auto pr-1 flex-1">
               {activeEmergencies.length === 0 ? (
                 <div className="text-center py-8 text-slate-500 text-xs">
-                  No active emergencies. City network nominal.
+                  No active emergencies. Emergency network ready.
                 </div>
               ) : (
                 activeEmergencies.map((emg) => {
@@ -200,25 +274,28 @@ export const AdminCommandCenter: React.FC<AdminCommandCenterProps> = ({
 
           {/* Hospital Readiness Matrix */}
           <div className="glass-panel p-4 rounded-2xl border border-slate-800 h-[240px] flex flex-col overflow-hidden">
-            <h2 className="text-xs font-black uppercase tracking-wider text-slate-200 pb-2 border-b border-slate-800 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-emerald-400" />
-              Hospital Emergency Capacity
-            </h2>
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <h2 className="text-xs font-black uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-emerald-400" />
+                {selectedDistrict.toUpperCase()} Hospitals ({filteredHospitals.length})
+              </h2>
+              <span className="text-[10px] text-slate-400">Beds Free</span>
+            </div>
 
             <div className="mt-2 space-y-2 overflow-y-auto pr-1 flex-1 text-xs">
-              {hospitals.map((h) => {
+              {(filteredHospitals.length > 0 ? filteredHospitals : hospitals).map((h) => {
                 const isOverloaded = h.emergency_status === 'OVERLOADED' || h.available_er_beds <= 0;
                 return (
                   <div
                     key={h.id}
                     onClick={() => setSelectedHospitalId(h.id)}
-                    className="p-2 rounded-lg bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 flex items-center justify-between cursor-pointer"
+                    className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 hover:border-slate-700 flex items-center justify-between cursor-pointer"
                   >
                     <div className="truncate max-w-[160px]">
                       <div className="font-bold text-slate-200 truncate">{h.name}</div>
-                      <div className="text-[10px] text-slate-400">{h.current_wait_time_minutes}m wait</div>
+                      <div className="text-[10px] text-slate-400 truncate">{h.address}</div>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] font-mono">
+                    <div className="flex items-center gap-1.5 text-[11px] font-mono">
                       <span
                         className={`px-1.5 py-0.5 rounded font-bold ${
                           isOverloaded ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'

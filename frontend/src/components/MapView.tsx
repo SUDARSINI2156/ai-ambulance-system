@@ -1,12 +1,26 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import { Compass, MapPin } from 'lucide-react';
 import { Hospital, Ambulance, Emergency } from '../types';
+
+export const TAMIL_NADU_DISTRICTS = [
+  { id: 'all', name: 'All Tamil Nadu', lat: 11.1271, lng: 78.6569, zoom: 7 },
+  { id: 'chennai', name: 'Chennai', lat: 13.0475, lng: 80.2420, zoom: 13 },
+  { id: 'coimbatore', name: 'Coimbatore', lat: 11.0168, lng: 76.9558, zoom: 13 },
+  { id: 'madurai', name: 'Madurai', lat: 9.9252, lng: 78.1198, zoom: 13 },
+  { id: 'trichy', name: 'Tiruchirappalli', lat: 10.7905, lng: 78.7047, zoom: 13 },
+  { id: 'salem', name: 'Salem', lat: 11.6643, lng: 78.1460, zoom: 13 },
+  { id: 'vellore', name: 'Vellore', lat: 12.9165, lng: 79.1325, zoom: 13 },
+  { id: 'tirunelveli', name: 'Tirunelveli', lat: 8.7139, lng: 77.7567, zoom: 13 },
+];
 
 interface MapViewProps {
   hospitals: Hospital[];
   ambulances: Ambulance[];
   activeEmergency?: Emergency | null;
   selectedHospitalId?: number | null;
+  selectedDistrict?: string;
+  onDistrictChange?: (districtId: string) => void;
   onHospitalClick?: (hosp: Hospital) => void;
   onAmbulanceClick?: (amb: Ambulance) => void;
 }
@@ -16,6 +30,8 @@ export const MapView: React.FC<MapViewProps> = ({
   ambulances,
   activeEmergency,
   selectedHospitalId,
+  selectedDistrict = 'chennai',
+  onDistrictChange,
   onHospitalClick,
   onAmbulanceClick,
 }) => {
@@ -23,21 +39,23 @@ export const MapView: React.FC<MapViewProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const routesLayerRef = useRef<L.LayerGroup | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
 
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Centered on Central Chennai (T. Nagar / Anna Salai / Thousand Lights)
+    const initialDistrict = TAMIL_NADU_DISTRICTS.find((d) => d.id === selectedDistrict) || TAMIL_NADU_DISTRICTS[1];
+
     const map = L.map(mapContainerRef.current, {
-      center: [13.0475, 80.2420],
-      zoom: 13,
+      center: [initialDistrict.lat, initialDistrict.lng],
+      zoom: initialDistrict.zoom,
       zoomControl: false,
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Ultra-clean tactical dark basemap
+    // Dark Carto basemap
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
       subdomains: 'abcd',
@@ -54,6 +72,54 @@ export const MapView: React.FC<MapViewProps> = ({
     };
   }, []);
 
+  // Handle District FlyTo
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const target = TAMIL_NADU_DISTRICTS.find((d) => d.id === selectedDistrict);
+    if (target) {
+      mapInstanceRef.current.flyTo([target.lat, target.lng], target.zoom, {
+        duration: 1.2,
+      });
+    }
+  }, [selectedDistrict]);
+
+  // Handle Live GPS Geolocation
+  const handleLocateMe = () => {
+    if (!navigator.geolocation || !mapInstanceRef.current) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([latitude, longitude], 15, { duration: 1.5 });
+
+          // Draw user circle marker
+          const userCircle = L.circleMarker([latitude, longitude], {
+            radius: 8,
+            fillColor: '#06b6d4',
+            color: '#ffffff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.9,
+          }).bindPopup('<b style="color:#06b6d4">📍 You are here</b>');
+
+          markersLayerRef.current?.addLayer(userCircle);
+        }
+        setIsLocating(false);
+      },
+      (err) => {
+        console.warn('Geolocation error:', err);
+        alert('Could not access current location. Please grant location permissions in your browser.');
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 6000 }
+    );
+  };
+
   // Update Markers & Routes
   useEffect(() => {
     if (!mapInstanceRef.current || !markersLayerRef.current || !routesLayerRef.current) return;
@@ -65,7 +131,7 @@ export const MapView: React.FC<MapViewProps> = ({
     hospitals.forEach((hosp) => {
       const isSelected = hosp.id === selectedHospitalId;
       const isDiverting = hosp.emergency_status === 'DIVERTING' || hosp.available_er_beds <= 0;
-      
+
       const badgeColor = isDiverting
         ? 'bg-rose-600 border-rose-400'
         : hosp.available_er_beds >= 5
@@ -95,7 +161,7 @@ export const MapView: React.FC<MapViewProps> = ({
 
       const marker = L.marker([hosp.latitude, hosp.longitude], { icon: hospIcon });
       marker.on('click', () => onHospitalClick?.(hosp));
-      
+
       marker.bindPopup(`
         <div class="p-2 space-y-1 text-xs">
           <div class="font-bold text-sm text-cyan-400">${hosp.name}</div>
@@ -146,7 +212,7 @@ export const MapView: React.FC<MapViewProps> = ({
       markersLayerRef.current?.addLayer(marker);
     });
 
-    // 3. Render Emergency Pickup Point & Corridors
+    // 3. Render Emergency Pickup Point & Routes
     if (activeEmergency) {
       const emergencyHtml = `
         <div class="relative">
@@ -177,7 +243,7 @@ export const MapView: React.FC<MapViewProps> = ({
       `);
       markersLayerRef.current?.addLayer(emgMarker);
 
-      // Draw optimal polyline route from ambulance -> pickup -> target hospital
+      // Draw polyline routes
       const assignedAmb = ambulances.find((a) => a.id === activeEmergency.assigned_ambulance_id);
       const assignedHosp = hospitals.find((h) => h.id === activeEmergency.assigned_hospital_id);
 
@@ -206,23 +272,47 @@ export const MapView: React.FC<MapViewProps> = ({
   }, [hospitals, ambulances, activeEmergency, selectedHospitalId]);
 
   return (
-    <div className="relative w-full h-full min-h-[420px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
+    <div className="relative w-full h-full min-h-[420px] rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
       <div ref={mapContainerRef} className="w-full h-full" />
-      
-      {/* Tactical Map Overlay HUD */}
-      <div className="absolute top-4 left-4 z-[400] flex flex-col gap-2">
-        <div className="glass-panel px-3 py-2 rounded-xl flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-            <span className="text-slate-300">Free Corridor</span>
+
+      {/* Top Left: District Switcher & Live GPS Locator HUD */}
+      <div className="absolute top-4 left-4 z-[400] flex flex-wrap items-center gap-2">
+        {/* District Dropdown */}
+        <div className="glass-panel px-3 py-1.5 rounded-2xl flex items-center gap-2 border border-slate-700/80 shadow-xl">
+          <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+          <select
+            value={selectedDistrict}
+            onChange={(e) => onDistrictChange?.(e.target.value)}
+            className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+          >
+            {TAMIL_NADU_DISTRICTS.map((d) => (
+              <option key={d.id} value={d.id} className="bg-slate-900 text-white">
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Locate Me Button */}
+        <button
+          onClick={handleLocateMe}
+          disabled={isLocating}
+          className="glass-panel px-3 py-1.5 rounded-2xl flex items-center gap-1.5 text-xs font-bold text-cyan-300 hover:text-white border border-cyan-500/40 hover:bg-cyan-950/40 transition-all shadow-xl active:scale-95"
+          title="Zoom to your live device GPS location"
+        >
+          <Compass className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
+          <span>{isLocating ? 'Locating...' : 'Locate Me'}</span>
+        </button>
+
+        {/* Legend */}
+        <div className="glass-panel px-3 py-1.5 rounded-2xl hidden sm:flex items-center gap-2.5 text-[11px] border border-slate-800">
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span className="text-slate-300">Free Beds</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-            <span className="text-slate-300">Moderate</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-            <span className="text-slate-300">Severe Traffic</span>
+          <div className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span className="text-slate-300">Overloaded</span>
           </div>
         </div>
       </div>

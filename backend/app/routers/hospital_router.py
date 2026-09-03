@@ -7,11 +7,42 @@ from ..schemas import HospitalOut, HospitalCapacityUpdate, SurgeForecastResponse
 from ..ai.load_forecaster import forecast_hospital_surge
 from .websocket_router import ws_manager
 
+from ..simulation.road_network import DISTRICTS
+from ..services.osm_service import geocode_location, fetch_osm_hospitals_near
+
 router = APIRouter(prefix="/api/hospitals", tags=["Hospitals"])
 
+@router.get("/districts")
+def list_districts():
+    """Returns supported Tamil Nadu district coordinates and metadata."""
+    return DISTRICTS
+
+@router.get("/osm-search")
+def search_osm_hospitals(query: Optional[str] = None, lat: Optional[float] = None, lng: Optional[float] = None):
+    """Dynamically geocodes or queries real hospital nodes near any coordinate via OpenStreetMap."""
+    if query and (lat is None or lng is None):
+        geo = geocode_location(query)
+        if geo:
+            lat = geo["lat"]
+            lng = geo["lng"]
+        else:
+            return {"location": query, "hospitals": []}
+
+    if lat is not None and lng is not None:
+        osm_hospitals = fetch_osm_hospitals_near(lat, lng)
+        return {
+            "coordinates": {"lat": lat, "lng": lng},
+            "total_found": len(osm_hospitals),
+            "hospitals": osm_hospitals
+        }
+    return {"error": "Provide either query (place name) or lat & lng"}
+
 @router.get("", response_model=List[HospitalOut])
-def list_hospitals(db: Session = Depends(get_db)):
+def list_hospitals(district: Optional[str] = None, db: Session = Depends(get_db)):
     hospitals = db.query(Hospital).all()
+    if district and district.lower() != "all":
+        # Case-insensitive address or name matching
+        hospitals = [h for h in hospitals if district.lower() in h.address.lower() or district.lower() in h.name.lower()]
     return hospitals
 
 @router.get("/{hospital_id}", response_model=HospitalOut)

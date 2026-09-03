@@ -7,7 +7,14 @@ const api = axios.create({
 
 export const EmergencyAPI = {
   // Hospitals
-  getHospitals: () => api.get('/hospitals'),
+  getHospitals: (district?: string) => api.get(district && district !== 'all' ? `/hospitals?district=${district}` : '/hospitals'),
+  getDistricts: () => api.get('/hospitals/districts'),
+  searchOSMHospitals: (query?: string, lat?: number, lng?: number) => {
+    let url = '/hospitals/osm-search?';
+    if (query) url += `query=${encodeURIComponent(query)}&`;
+    if (lat !== undefined && lng !== undefined) url += `lat=${lat}&lng=${lng}`;
+    return api.get(url);
+  },
   getHospital: (id: number) => api.get(`/hospitals/${id}`),
   updateHospitalCapacity: (id: number, data: any) => api.put(`/hospitals/${id}/capacity`, data),
   getIncomingAmbulances: (id: number) => api.get(`/hospitals/${id}/incoming`),

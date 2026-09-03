@@ -1,12 +1,25 @@
 """
-Chennai Metro Road Network & Hospital Coordinates
-Provides realistic geographical locations and interpolated road waypoints.
+Multi-District Tamil Nadu Road Network & Verified Hospital Coordinates
+Covers major medical hubs: Chennai, Coimbatore, Madurai, Trichy, Salem, Vellore, Tirunelveli.
 """
 
-CHENNAI_HOSPITALS = [
+DISTRICTS = [
+    {"id": "all", "name": "All Tamil Nadu", "lat": 11.1271, "lng": 78.6569, "zoom": 7},
+    {"id": "chennai", "name": "Chennai", "lat": 13.0475, "lng": 80.2420, "zoom": 13},
+    {"id": "coimbatore", "name": "Coimbatore", "lat": 11.0168, "lng": 76.9558, "zoom": 13},
+    {"id": "madurai", "name": "Madurai", "lat": 9.9252, "lng": 78.1198, "zoom": 13},
+    {"id": "trichy", "name": "Tiruchirappalli", "lat": 10.7905, "lng": 78.7047, "zoom": 13},
+    {"id": "salem", "name": "Salem", "lat": 11.6643, "lng": 78.1460, "zoom": 13},
+    {"id": "vellore", "name": "Vellore", "lat": 12.9165, "lng": 79.1325, "zoom": 13},
+    {"id": "tirunelveli", "name": "Tirunelveli", "lat": 8.7139, "lng": 77.7567, "zoom": 13},
+]
+
+MULTI_DISTRICT_HOSPITALS = [
+    # --- CHENNAI DISTRICT ---
     {
         "id": 1,
         "name": "Apollo Hospitals (Greams Road)",
+        "district": "chennai",
         "latitude": 13.0612,
         "longitude": 80.2520,
         "address": "21 Greams Lane, Thousand Lights, Chennai",
@@ -26,12 +39,13 @@ CHENNAI_HOSPITALS = [
     {
         "id": 2,
         "name": "Rajiv Gandhi Govt General Hospital",
+        "district": "chennai",
         "latitude": 13.0827,
         "longitude": 80.2785,
         "address": "EVR Periyar Salai, Park Town, Chennai",
         "phone": "+91 44 2530 5000",
         "total_er_beds": 50,
-        "available_er_beds": 4,  # Heavily loaded Govt GH
+        "available_er_beds": 4,
         "total_icu_beds": 25,
         "available_icu_beds": 1,
         "total_ventilators": 15,
@@ -45,6 +59,7 @@ CHENNAI_HOSPITALS = [
     {
         "id": 3,
         "name": "MIOT International Hospital",
+        "district": "chennai",
         "latitude": 13.0189,
         "longitude": 80.1873,
         "address": "4/112 Mount Poonamallee Rd, Manapakkam, Chennai",
@@ -64,9 +79,10 @@ CHENNAI_HOSPITALS = [
     {
         "id": 4,
         "name": "Fortis Malar Hospital",
+        "district": "chennai",
         "latitude": 13.0067,
         "longitude": 80.2575,
-        "address": "No. 52, 1st Main Rd, Gandhi Nagar, Adyar, Chennai",
+        "address": "52 1st Main Rd, Gandhi Nagar, Adyar, Chennai",
         "phone": "+91 44 4289 2222",
         "total_er_beds": 18,
         "available_er_beds": 7,
@@ -82,10 +98,11 @@ CHENNAI_HOSPITALS = [
     },
     {
         "id": 5,
-        "name": "Kauvery Hospital",
+        "name": "Kauvery Hospital (Alwarpet)",
+        "district": "chennai",
         "latitude": 13.0368,
         "longitude": 80.2543,
-        "address": "199 Luz Church Rd, Mylapore / Alwarpet, Chennai",
+        "address": "199 Luz Church Rd, Mylapore, Chennai",
         "phone": "+91 44 4000 6000",
         "total_er_beds": 22,
         "available_er_beds": 10,
@@ -102,9 +119,10 @@ CHENNAI_HOSPITALS = [
     {
         "id": 6,
         "name": "SIMS Hospital (Vadapalani)",
+        "district": "chennai",
         "latitude": 13.0515,
         "longitude": 80.2104,
-        "address": "Jawaharlal Nehru Salai, Vadapalani, Chennai",
+        "address": "1 Jawaharlal Nehru Salai, Vadapalani, Chennai",
         "phone": "+91 44 2000 2001",
         "total_er_beds": 24,
         "available_er_beds": 11,
@@ -117,59 +135,303 @@ CHENNAI_HOSPITALS = [
         "cardiac_cath_lab": True,
         "stroke_unit": True,
         "trauma_center_level": 1
+    },
+
+    # --- COIMBATORE DISTRICT ---
+    {
+        "id": 7,
+        "name": "Kovai Medical Center and Hospital (KMCH)",
+        "district": "coimbatore",
+        "latitude": 11.0427,
+        "longitude": 77.0392,
+        "address": "99 Avinashi Road, Peelamedu, Coimbatore",
+        "phone": "+91 422 432 3800",
+        "total_er_beds": 35,
+        "available_er_beds": 15,
+        "total_icu_beds": 20,
+        "available_icu_beds": 7,
+        "total_ventilators": 12,
+        "available_ventilators": 6,
+        "doctors_on_duty": 10,
+        "current_wait_time_minutes": 10.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+    {
+        "id": 8,
+        "name": "PSG Hospitals",
+        "district": "coimbatore",
+        "latitude": 11.0263,
+        "longitude": 77.0028,
+        "address": "Avinashi Road, Peelamedu, Coimbatore",
+        "phone": "+91 422 257 0170",
+        "total_er_beds": 30,
+        "available_er_beds": 12,
+        "total_icu_beds": 18,
+        "available_icu_beds": 5,
+        "total_ventilators": 10,
+        "available_ventilators": 4,
+        "doctors_on_duty": 9,
+        "current_wait_time_minutes": 12.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+    {
+        "id": 9,
+        "name": "Coimbatore Medical College Hospital (CMCH)",
+        "district": "coimbatore",
+        "latitude": 10.9996,
+        "longitude": 76.9691,
+        "address": "Trichy Road, Gopalapuram, Coimbatore",
+        "phone": "+91 422 230 1393",
+        "total_er_beds": 45,
+        "available_er_beds": 5,
+        "total_icu_beds": 22,
+        "available_icu_beds": 2,
+        "total_ventilators": 14,
+        "available_ventilators": 1,
+        "doctors_on_duty": 12,
+        "current_wait_time_minutes": 30.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+    {
+        "id": 10,
+        "name": "Ganga Hospital (Trauma & Orthopaedic)",
+        "district": "coimbatore",
+        "latitude": 11.0215,
+        "longitude": 76.9536,
+        "address": "313 Mettupalayam Road, Saibaba Colony, Coimbatore",
+        "phone": "+91 422 248 5000",
+        "total_er_beds": 25,
+        "available_er_beds": 8,
+        "total_icu_beds": 15,
+        "available_icu_beds": 4,
+        "total_ventilators": 8,
+        "available_ventilators": 3,
+        "doctors_on_duty": 8,
+        "current_wait_time_minutes": 8.0,
+        "cardiac_cath_lab": False,
+        "stroke_unit": False,
+        "trauma_center_level": 1
+    },
+
+    # --- MADURAI DISTRICT ---
+    {
+        "id": 11,
+        "name": "Meenakshi Mission Hospital and Research Centre",
+        "district": "madurai",
+        "latitude": 9.9472,
+        "longitude": 78.1565,
+        "address": "Lake Expanse, Melur Main Road, Madurai",
+        "phone": "+91 452 426 3000",
+        "total_er_beds": 30,
+        "available_er_beds": 14,
+        "total_icu_beds": 16,
+        "available_icu_beds": 6,
+        "total_ventilators": 10,
+        "available_ventilators": 5,
+        "doctors_on_duty": 8,
+        "current_wait_time_minutes": 9.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+    {
+        "id": 12,
+        "name": "Government Rajaji Hospital (GRH)",
+        "district": "madurai",
+        "latitude": 9.9271,
+        "longitude": 78.1348,
+        "address": "Panagal Road, Goripalayam, Madurai",
+        "phone": "+91 452 253 2535",
+        "total_er_beds": 40,
+        "available_er_beds": 3,
+        "total_icu_beds": 20,
+        "available_icu_beds": 1,
+        "total_ventilators": 12,
+        "available_ventilators": 1,
+        "doctors_on_duty": 11,
+        "current_wait_time_minutes": 32.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+    {
+        "id": 13,
+        "name": "Apollo Speciality Hospitals (Madurai)",
+        "district": "madurai",
+        "latitude": 9.9405,
+        "longitude": 78.1480,
+        "address": "KK Nagar, Madurai",
+        "phone": "+91 452 258 0880",
+        "total_er_beds": 22,
+        "available_er_beds": 11,
+        "total_icu_beds": 12,
+        "available_icu_beds": 5,
+        "total_ventilators": 8,
+        "available_ventilators": 4,
+        "doctors_on_duty": 7,
+        "current_wait_time_minutes": 8.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+
+    # --- TIRUCHIRAPPALLI (TRICHY) DISTRICT ---
+    {
+        "id": 14,
+        "name": "Kauvery Hospital (Tennur, Trichy)",
+        "district": "trichy",
+        "latitude": 10.8252,
+        "longitude": 78.6853,
+        "address": "1 Royal Road, Tennur, Tiruchirappalli",
+        "phone": "+91 431 407 7777",
+        "total_er_beds": 24,
+        "available_er_beds": 10,
+        "total_icu_beds": 12,
+        "available_icu_beds": 4,
+        "total_ventilators": 8,
+        "available_ventilators": 4,
+        "doctors_on_duty": 6,
+        "current_wait_time_minutes": 10.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+    {
+        "id": 15,
+        "name": "Mahatma Gandhi Memorial Govt Hospital (MGMGH)",
+        "district": "trichy",
+        "latitude": 10.8145,
+        "longitude": 78.6912,
+        "address": "Collector Office Road, Tiruchirappalli",
+        "phone": "+91 431 241 5530",
+        "total_er_beds": 35,
+        "available_er_beds": 4,
+        "total_icu_beds": 18,
+        "available_icu_beds": 1,
+        "total_ventilators": 10,
+        "available_ventilators": 1,
+        "doctors_on_duty": 10,
+        "current_wait_time_minutes": 28.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+
+    # --- SALEM DISTRICT ---
+    {
+        "id": 16,
+        "name": "Manipal Hospital (Salem)",
+        "district": "salem",
+        "latitude": 11.6912,
+        "longitude": 78.1345,
+        "address": "Dalmia Board, Bangalore Highway, Salem",
+        "phone": "+91 427 234 6600",
+        "total_er_beds": 20,
+        "available_er_beds": 9,
+        "total_icu_beds": 10,
+        "available_icu_beds": 3,
+        "total_ventilators": 6,
+        "available_ventilators": 3,
+        "doctors_on_duty": 5,
+        "current_wait_time_minutes": 11.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+    {
+        "id": 17,
+        "name": "Govt Mohan Kumaramangalam Medical College Hospital",
+        "district": "salem",
+        "latitude": 11.6625,
+        "longitude": 78.1510,
+        "address": "Collectorate Complex, Salem",
+        "phone": "+91 427 241 1211",
+        "total_er_beds": 35,
+        "available_er_beds": 3,
+        "total_icu_beds": 16,
+        "available_icu_beds": 1,
+        "total_ventilators": 8,
+        "available_ventilators": 1,
+        "doctors_on_duty": 9,
+        "current_wait_time_minutes": 30.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+
+    # --- VELLORE DISTRICT ---
+    {
+        "id": 18,
+        "name": "Christian Medical College (CMC Vellore)",
+        "district": "vellore",
+        "latitude": 12.9250,
+        "longitude": 79.1350,
+        "address": "Ida Scudder Road, Vellore",
+        "phone": "+91 416 228 1000",
+        "total_er_beds": 50,
+        "available_er_beds": 18,
+        "total_icu_beds": 30,
+        "available_icu_beds": 10,
+        "total_ventilators": 20,
+        "available_ventilators": 11,
+        "doctors_on_duty": 15,
+        "current_wait_time_minutes": 15.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
+    },
+
+    # --- TIRUNELVELI DISTRICT ---
+    {
+        "id": 19,
+        "name": "Tirunelveli Medical College Hospital (TVMCH)",
+        "district": "tirunelveli",
+        "latitude": 8.7180,
+        "longitude": 77.7450,
+        "address": "High Ground, Palayamkottai, Tirunelveli",
+        "phone": "+91 462 257 2733",
+        "total_er_beds": 30,
+        "available_er_beds": 6,
+        "total_icu_beds": 14,
+        "available_icu_beds": 2,
+        "total_ventilators": 8,
+        "available_ventilators": 2,
+        "doctors_on_duty": 8,
+        "current_wait_time_minutes": 25.0,
+        "cardiac_cath_lab": True,
+        "stroke_unit": True,
+        "trauma_center_level": 1
     }
 ]
 
-INITIAL_AMBULANCES = [
-    {
-        "id": 1,
-        "vehicle_number": "TN-01-AM-1081",
-        "driver_name": "R. Selvakumar",
-        "phone": "+91 98401 11081",
-        "status": "AVAILABLE",
-        "equipment_level": "ALS",
-        "current_lat": 13.0418,
-        "current_lng": 80.2341, # T. Nagar Panagal Park
-        "speed_kmh": 0.0,
-        "heading": 45.0
-    },
-    {
-        "id": 2,
-        "vehicle_number": "TN-02-AM-1082",
-        "driver_name": "K. Dinesh",
-        "phone": "+91 98402 11082",
-        "status": "AVAILABLE",
-        "equipment_level": "ALS",
-        "current_lat": 13.0850,
-        "current_lng": 80.2102, # Anna Nagar Roundtana
-        "speed_kmh": 0.0,
-        "heading": 120.0
-    },
-    {
-        "id": 3,
-        "vehicle_number": "TN-09-AM-1083",
-        "driver_name": "M. Vignesh",
-        "phone": "+91 98403 11083",
-        "status": "AVAILABLE",
-        "equipment_level": "BLS",
-        "current_lat": 13.0067,
-        "current_lng": 80.2023, # Guindy Kathipara
-        "speed_kmh": 0.0,
-        "heading": 90.0
-    },
-    {
-        "id": 4,
-        "vehicle_number": "TN-07-AM-1084",
-        "driver_name": "S. Prakash",
-        "phone": "+91 98404 11084",
-        "status": "AVAILABLE",
-        "equipment_level": "ALS",
-        "current_lat": 13.0336,
-        "current_lng": 80.2707, # Santhome / Marina Beach
-        "speed_kmh": 0.0,
-        "heading": 270.0
-    }
+INITIAL_MULTI_AMBULANCES = [
+    # Chennai Fleet
+    {"id": 1, "vehicle_number": "TN-01-AM-1081", "driver_name": "R. Selvakumar", "phone": "+91 98401 11081", "status": "AVAILABLE", "equipment_level": "ALS", "current_lat": 13.0418, "current_lng": 80.2341, "speed_kmh": 0.0, "heading": 45.0, "district": "chennai"},
+    {"id": 2, "vehicle_number": "TN-02-AM-1082", "driver_name": "K. Dinesh", "phone": "+91 98402 11082", "status": "AVAILABLE", "equipment_level": "ALS", "current_lat": 13.0850, "current_lng": 80.2102, "speed_kmh": 0.0, "heading": 120.0, "district": "chennai"},
+    
+    # Coimbatore Fleet
+    {"id": 3, "vehicle_number": "TN-37-AM-1083", "driver_name": "M. Vignesh", "phone": "+91 98403 11083", "status": "AVAILABLE", "equipment_level": "ALS", "current_lat": 11.0168, "current_lng": 76.9658, "speed_kmh": 0.0, "heading": 90.0, "district": "coimbatore"},
+    {"id": 4, "vehicle_number": "TN-38-AM-1084", "driver_name": "P. Karthik", "phone": "+91 98404 11084", "status": "AVAILABLE", "equipment_level": "BLS", "current_lat": 11.0320, "current_lng": 77.0120, "speed_kmh": 0.0, "heading": 180.0, "district": "coimbatore"},
+
+    # Madurai Fleet
+    {"id": 5, "vehicle_number": "TN-58-AM-1085", "driver_name": "S. Prakash", "phone": "+91 98405 11085", "status": "AVAILABLE", "equipment_level": "ALS", "current_lat": 9.9320, "current_lng": 78.1300, "speed_kmh": 0.0, "heading": 270.0, "district": "madurai"},
+    
+    # Trichy Fleet
+    {"id": 6, "vehicle_number": "TN-45-AM-1086", "driver_name": "A. Balaji", "phone": "+91 98406 11086", "status": "AVAILABLE", "equipment_level": "ALS", "current_lat": 10.8120, "current_lng": 78.6850, "speed_kmh": 0.0, "heading": 0.0, "district": "trichy"},
+
+    # Salem Fleet
+    {"id": 7, "vehicle_number": "TN-30-AM-1087", "driver_name": "T. Saravanan", "phone": "+91 98407 11087", "status": "AVAILABLE", "equipment_level": "BLS", "current_lat": 11.6680, "current_lng": 78.1400, "speed_kmh": 0.0, "heading": 60.0, "district": "salem"}
 ]
+
+# Backward compatibility alias
+CHENNAI_HOSPITALS = MULTI_DISTRICT_HOSPITALS
+INITIAL_AMBULANCES = INITIAL_MULTI_AMBULANCES
 
 def interpolate_points(start: tuple, end: tuple, num_steps: int = 15) -> list:
     """Generates linearly spaced GPS waypoints between two coordinates."""

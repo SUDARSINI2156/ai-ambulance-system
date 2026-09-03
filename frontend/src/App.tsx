@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { CitizenSOS } from './views/CitizenSOS';
 import { AdminCommandCenter } from './views/AdminCommandCenter';
 import { AmbulanceHUD } from './views/AmbulanceHUD';
 import { HospitalDashboard } from './views/HospitalDashboard';
 import { AnalyticsView } from './views/AnalyticsView';
 import { DispatchModal } from './components/DispatchModal';
 import { DynamicRerouteModal } from './components/DynamicRerouteModal';
+import { HowItWorksModal } from './components/HowItWorksModal';
 import { EmergencyAPI } from './services/api';
 import { wsClient } from './services/websocket';
 import { Hospital, Ambulance, Emergency, DynamicRerouteEvent } from './types';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'admin' | 'ambulance' | 'hospital' | 'analytics'>('admin');
+  const [activeTab, setActiveTab] = useState<'sos' | 'admin' | 'ambulance' | 'hospital' | 'analytics'>('sos');
   const [isConnected, setIsConnected] = useState(false);
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [ambulances, setAmbulances] = useState<Ambulance[]>([]);
@@ -100,26 +103,50 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Primary active emergency for the driver view
+  // Primary active emergency
   const primaryEmergency = emergencies.find(
     (e) => e.status !== 'COMPLETED' && e.status !== 'CANCELLED'
   );
   const primaryAmbulance = ambulances.find((a) => a.id === primaryEmergency?.assigned_ambulance_id) || ambulances[0];
   const primaryHospital = hospitals.find((h) => h.id === primaryEmergency?.assigned_hospital_id) || hospitals[0];
 
+  const handleCancelEmergency = async (id: number) => {
+    try {
+      await EmergencyAPI.updateEmergencyStatus(id, 'CANCELLED');
+      fetchData();
+    } catch (e) {
+      console.error('Failed to cancel emergency:', e);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
-      {/* Tactical Navbar */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+      {/* Tactical Navbar with Citizen SOS & How It Works */}
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isConnected={isConnected}
         activeEmergenciesCount={emergencies.filter((e) => e.status !== 'COMPLETED').length}
         availableAmbulancesCount={ambulances.filter((a) => a.status === 'AVAILABLE').length}
+        onOpenHowItWorks={() => setIsHowItWorksOpen(true)}
       />
 
       {/* Main View Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
+        {/* 1. Citizen SOS Patient View */}
+        {activeTab === 'sos' && (
+          <CitizenSOS
+            activeEmergency={primaryEmergency}
+            assignedAmbulance={primaryAmbulance}
+            assignedHospital={primaryHospital}
+            onEmergencyCreated={(newEmg) => {
+              fetchData();
+            }}
+            onEmergencyCancelled={handleCancelEmergency}
+          />
+        )}
+
+        {/* 2. City Central Dispatch Command Center */}
         {activeTab === 'admin' && (
           <AdminCommandCenter
             hospitals={hospitals}
@@ -131,6 +158,7 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* 3. Paramedic Ambulance Navigation HUD */}
         {activeTab === 'ambulance' && (
           <AmbulanceHUD
             ambulance={primaryAmbulance}
@@ -140,6 +168,7 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* 4. Hospital Emergency Desk */}
         {activeTab === 'hospital' && (
           <HospitalDashboard
             hospitals={hospitals}
@@ -148,6 +177,7 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* 5. Machine Learning Academic Analytics */}
         {activeTab === 'analytics' && <AnalyticsView />}
       </main>
 
@@ -168,6 +198,12 @@ export const App: React.FC = () => {
           setRerouteAlert(null);
           setActiveTab('ambulance');
         }}
+      />
+
+      {/* Interactive Walkthrough / How It Works Modal */}
+      <HowItWorksModal
+        isOpen={isHowItWorksOpen}
+        onClose={() => setIsHowItWorksOpen(false)}
       />
     </div>
   );
