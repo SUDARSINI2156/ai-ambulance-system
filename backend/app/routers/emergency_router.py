@@ -10,6 +10,7 @@ from ..ai.hospital_recommender import evaluate_hospitals_for_emergency, haversin
 from ..ai.triage_classifier import classify_triage_priority
 from ..simulation.simulator import sim_state
 from .websocket_router import ws_manager
+from ..services.sms_service import send_emergency_sms
 
 router = APIRouter(prefix="/api/emergencies", tags=["Emergencies"])
 
@@ -133,6 +134,15 @@ async def create_emergency(payload: EmergencyCreate, db: Session = Depends(get_d
             "explainability": recommended_hosp_info["explainability"]
         }
     })
+
+    # 9. Real-time SMS Gateway Alert (using Fast2SMS / Gateway)
+    sms_text = f"108 ALERT: {emg_code} [{new_emergency.priority}]. Amb: {assigned_amb.vehicle_number if assigned_amb else 'Dispatched'}. Dest: {recommended_hosp_info['hospital_name']} (ETA ~{recommended_hosp_info['predicted_eta_minutes']}m)."
+    try:
+        # Send to driver or default alert line
+        phone = assigned_amb.phone if assigned_amb else "9840111081"
+        send_emergency_sms(phone, sms_text)
+    except Exception as e:
+        print(f"SMS dispatch skipped: {e}")
 
     return new_emergency
 

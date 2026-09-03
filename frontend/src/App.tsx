@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
-import { CitizenSOS } from './views/CitizenSOS';
+import { RoleSelector } from './components/RoleSelector';
+import { GuidedPatientFlow } from './views/GuidedPatientFlow';
 import { AdminCommandCenter } from './views/AdminCommandCenter';
 import { AmbulanceHUD } from './views/AmbulanceHUD';
 import { HospitalDashboard } from './views/HospitalDashboard';
@@ -13,7 +14,8 @@ import { wsClient } from './services/websocket';
 import { Hospital, Ambulance, Emergency, DynamicRerouteEvent } from './types';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'sos' | 'admin' | 'ambulance' | 'hospital' | 'analytics'>('sos');
+  // Current Active Role: 'patient' | 'ambulance' | 'hospital' | 'admin' | 'analytics'
+  const [currentRole, setCurrentRole] = useState<'patient' | 'ambulance' | 'hospital' | 'admin' | 'analytics'>('patient');
   const [isConnected, setIsConnected] = useState(false);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
@@ -110,21 +112,23 @@ export const App: React.FC = () => {
   const primaryAmbulance = ambulances.find((a) => a.id === primaryEmergency?.assigned_ambulance_id) || ambulances[0];
   const primaryHospital = hospitals.find((h) => h.id === primaryEmergency?.assigned_hospital_id) || hospitals[0];
 
-  const handleCancelEmergency = async (id: number) => {
-    try {
-      await EmergencyAPI.updateEmergencyStatus(id, 'CANCELLED');
-      fetchData();
-    } catch (e) {
-      console.error('Failed to cancel emergency:', e);
-    }
+  // Map role to navbar tab
+  const roleToTab = (r: 'patient' | 'ambulance' | 'hospital' | 'admin' | 'analytics'): 'sos' | 'admin' | 'ambulance' | 'hospital' | 'analytics' => {
+    if (r === 'patient') return 'sos';
+    return r;
+  };
+
+  const tabToRole = (t: 'sos' | 'admin' | 'ambulance' | 'hospital' | 'analytics'): 'patient' | 'ambulance' | 'hospital' | 'admin' | 'analytics' => {
+    if (t === 'sos') return 'patient';
+    return t;
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Tactical Navbar with Citizen SOS & How It Works */}
+      {/* Tactical Navbar */}
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        activeTab={roleToTab(currentRole)}
+        setActiveTab={(t) => setCurrentRole(tabToRole(t))}
         isConnected={isConnected}
         activeEmergenciesCount={emergencies.filter((e) => e.status !== 'COMPLETED').length}
         availableAmbulancesCount={ambulances.filter((a) => a.status === 'AVAILABLE').length}
@@ -132,34 +136,26 @@ export const App: React.FC = () => {
       />
 
       {/* Main View Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5">
-        {/* 1. Citizen SOS Patient View */}
-        {activeTab === 'sos' && (
-          <CitizenSOS
-            activeEmergency={primaryEmergency}
-            assignedAmbulance={primaryAmbulance}
-            assignedHospital={primaryHospital}
-            onEmergencyCreated={(newEmg) => {
-              fetchData();
-            }}
-            onEmergencyCancelled={handleCancelEmergency}
-          />
-        )}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+        {/* Role Selector Bar: Clearly shows who is using the app */}
+        <RoleSelector
+          currentRole={currentRole}
+          onSelectRole={(r) => setCurrentRole(r)}
+        />
 
-        {/* 2. City Central Dispatch Command Center */}
-        {activeTab === 'admin' && (
-          <AdminCommandCenter
+        {/* 1. Guided Patient Emergency Journey (The Main Consumer Flow) */}
+        {currentRole === 'patient' && (
+          <GuidedPatientFlow
             hospitals={hospitals}
             ambulances={ambulances}
-            emergencies={emergencies}
-            onOpenDispatch={() => setIsDispatchModalOpen(true)}
-            onRefresh={fetchData}
-            onSelectEmergency={() => setActiveTab('ambulance')}
+            activeEmergency={primaryEmergency}
+            onEmergencyCreated={() => fetchData()}
+            onEmergencyCompleted={() => fetchData()}
           />
         )}
 
-        {/* 3. Paramedic Ambulance Navigation HUD */}
-        {activeTab === 'ambulance' && (
+        {/* 2. Paramedic Ambulance Navigation HUD */}
+        {currentRole === 'ambulance' && (
           <AmbulanceHUD
             ambulance={primaryAmbulance}
             activeEmergency={primaryEmergency}
@@ -168,8 +164,8 @@ export const App: React.FC = () => {
           />
         )}
 
-        {/* 4. Hospital Emergency Desk */}
-        {activeTab === 'hospital' && (
+        {/* 3. Hospital Emergency Desk */}
+        {currentRole === 'hospital' && (
           <HospitalDashboard
             hospitals={hospitals}
             emergencies={emergencies}
@@ -177,8 +173,20 @@ export const App: React.FC = () => {
           />
         )}
 
+        {/* 4. City Central Dispatch Command Center */}
+        {currentRole === 'admin' && (
+          <AdminCommandCenter
+            hospitals={hospitals}
+            ambulances={ambulances}
+            emergencies={emergencies}
+            onOpenDispatch={() => setIsDispatchModalOpen(true)}
+            onRefresh={fetchData}
+            onSelectEmergency={() => setCurrentRole('ambulance')}
+          />
+        )}
+
         {/* 5. Machine Learning Academic Analytics */}
-        {activeTab === 'analytics' && <AnalyticsView />}
+        {currentRole === 'analytics' && <AnalyticsView />}
       </main>
 
       {/* 911 / 108 Emergency Incident Modal */}
@@ -196,7 +204,7 @@ export const App: React.FC = () => {
         onClose={() => setRerouteAlert(null)}
         onAccept={() => {
           setRerouteAlert(null);
-          setActiveTab('ambulance');
+          setCurrentRole('ambulance');
         }}
       />
 
