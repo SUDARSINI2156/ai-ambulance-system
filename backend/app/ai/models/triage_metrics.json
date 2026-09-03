@@ -1,0 +1,18 @@
+{
+  "model_name": "Gradient Boosting Triage Classifier",
+  "accuracy": 99.92,
+  "classes": [
+    "LOW",
+    "MEDIUM",
+    "HIGH",
+    "CRITICAL"
+  ],
+  "complaint_map": {
+    "0": "Cardiac / Chest Pain",
+    "1": "Respiratory / Dyspnea",
+    "2": "Trauma / Road Accident",
+    "3": "Neurological / Stroke",
+    "4": "Acute Abdominal",
+    "5": "Minor Trauma / General"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "model_name": "Hospital Surge & Load Forecaster",
+  "features": [
+    "hospital_id",
+    "current_occupancy_pct",
+    "recent_arrivals_1h",
+    "critical_cases",
+    "hour_of_day",
+    "day_of_week",
+    "is_weekend"
+  ],
+  "load_mae_percent": 2.22,
+  "risk_tier_accuracy": 84.7,
+  "risk_tier_labels": [
+    "LOW (<60%)",
+    "MEDIUM (60-75%)",
+    "HIGH (75-88%)",
+    "CRITICAL (>88%)"
+  ]
+}

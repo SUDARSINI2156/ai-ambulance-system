@@ -1,0 +1,37 @@
+services:
+  # FastAPI AI Decision Engine Web Service
+  - type: web
+    name: emergency-ai-backend
+    env: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt && python seed_data.py"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.6
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+
+  # React Frontend Static Site
+  - type: web
+    name: emergency-ai-frontend
+    env: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: "npm install && npm run build"
+    staticPublishPath: "./dist"
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: emergency-ai-backend
+          property: host
